@@ -1,0 +1,16 @@
+# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
+
+# dependencies
+/node_modules
+
+# production
+/not working
+/archive
+controller/db.php
+controller/sessions.php
+*no authentication.php
+*.svg
+*.htaccess
+/index.html
+/assets
+/model/Socialmedia.php
