@@ -250,7 +250,7 @@ if($_SERVER['REQUEST_METHOD'] === 'POST') {
 } elseif ($_SERVER['REQUEST_METHOD'] === 'GET') {
     if(empty($_GET)){
         try{
-            $query = $readDB->prepare('select id, FirstName, Username, Email, UserActive, AccountType, LoginAttempts from tblusers');
+            $query = $readDB->prepare('select id, FirstName, Username, Email, UserActive, AccountType, LoginAttempts, Organization, Website, Tag1, Tag2, Tag3 from tblusers');
             $query->execute();
 
             $rowCount = $query->rowCount();
@@ -258,7 +258,7 @@ if($_SERVER['REQUEST_METHOD'] === 'POST') {
             $userArray = array();
 
             while($row = $query->fetch(PDO::FETCH_ASSOC)) {
-                $user = new User($row['id'], $row['FirstName'], $row['Username'], $row['Email'], $row['UserActive'], $row['AccountType'], $row['LoginAttempts']);
+                $user = new User($row['id'], $row['FirstName'], $row['Username'], $row['Email'], $row['UserActive'], $row['AccountType'], $row['LoginAttempts'], $row['Organization'], $row['Website'], $row['Tag1'], $row['Tag2'], $row['Tag3']);
                 $userArray[] = $user->returnUserAsArray();
             }
 
@@ -300,7 +300,7 @@ if($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         if (empty($userid) || $userid == $returned_userid) {
             try{
-                $query = $readDB->prepare('select id, FirstName, Username, Email, UserActive, AccountType, LoginAttempts from tblusers where id = :userid');
+                $query = $readDB->prepare('select id, FirstName, Username, Email, UserActive, AccountType, LoginAttempts, Organization, Website, Tag1, Tag2, Tag3 from tblusers where id = :userid');
                 $query->bindParam(':userid', $returned_userid, PDO::PARAM_INT);
                 $query->execute();
 
@@ -316,7 +316,7 @@ if($_SERVER['REQUEST_METHOD'] === 'POST') {
                 }
 
                 while($row = $query->fetch(PDO::FETCH_ASSOC)) {
-                    $user = new User($row['id'], $row['FirstName'], $row['Username'], $row['Email'], $row['UserActive'], $row['AccountType'], $row['LoginAttempts']);
+                    $user = new User($row['id'], $row['FirstName'], $row['Username'], $row['Email'], $row['UserActive'], $row['AccountType'], $row['LoginAttempts'], $row['Organization'], $row['Website'], $row['Tag1'], $row['Tag2'], $row['Tag3']);
                     $userArray[] = $user->returnUserAsArray();
                 }
                 $returnData = array();

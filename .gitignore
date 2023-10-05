@@ -6,11 +6,17 @@
 # production
 /not working
 /archive
-controller/db.php
-controller/sessions.php
+/controller/db.php
+/controller/sessions.php
+/controller/post.php
+/controller/ca-bundle-main
+/controller/twitteroauth-main
 *no authentication.php
 *.svg
 *.htaccess
 /index.html
+/console_log.php
 /assets
 /model/Socialmedia.php
+/controller/post.php
+/sync.ffs_db

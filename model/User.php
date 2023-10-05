@@ -11,8 +11,14 @@ class User {
     private $_useractive;
     private $_accounttype;
     private $_loginattempts;
+    private $_organization;
+    private $_website;
+    private $_tag1;
+    private $_tag2;
+    private $_tag3;
 
-    public function __construct($id, $firstname, $username, $email, $useractive, $accounttype, $loginattempts) {
+
+    public function __construct($id, $firstname, $username, $email, $useractive, $accounttype, $loginattempts, $organization, $website, $tag1, $tag2, $tag3) {
         $this->setID($id);
         $this->setFirstname($firstname);
         $this->setUsername($username);
@@ -20,6 +26,11 @@ class User {
         $this->setUseractive($useractive);
         $this->setAccounttype($accounttype);
         $this->setLoginattempts($loginattempts);
+        $this->setOrganization($organization);
+        $this->setWebsite($website);
+        $this->setTag1($tag1);
+        $this->setTag2($tag2);
+        $this->setTag3($tag3);
     }
 
     public function getID() {
@@ -48,6 +59,26 @@ class User {
 
     public function getLoginattempts() {
         return $this->_loginattempts;
+    }
+
+    public function getOrganization() {
+        return $this->_organization;
+    }
+
+    public function getWebsite() {
+        return $this->_website;
+    }
+
+    public function getTag1() {
+        return $this->_tag1;
+    }
+
+    public function getTag2() {
+        return $this->_tag2;
+    }
+
+    public function getTag3() {
+        return $this->_tag3;
     }
 
     public function setID($id) {
@@ -99,6 +130,41 @@ class User {
         $this->_loginattempts = $loginattempts;
     }
 
+    public function setOrganization($organization) {
+        if (strlen($organization) < 0 || strlen($organization) > 255) {
+            throw new UserException('User organization error');
+        }
+        $this->_organization = $organization;
+    }
+
+    public function setWebsite($website) {
+        if (strlen($website) < 0 || strlen($website) > 255) {
+            throw new UserException('User website error');
+        }
+        $this->_website = $website;
+    }
+
+    public function setTag1($tag1) {
+        if (strlen($tag1) < 0 || strlen($tag1) > 255) {
+            throw new UserException('User tag1 error');
+        }
+        $this->_tag1 = $tag1;
+    }
+
+    public function setTag2($tag2) {
+        if (strlen($tag2) < 0 || strlen($tag2) > 255) {
+            throw new UserException('User tag2 error');
+        }
+        $this->_tag2 = $tag2;
+    }
+
+    public function setTag3($tag3) {
+        if (strlen($tag3) < 0 || strlen($tag3) > 255) {
+            throw new UserException('User tag3 error');
+        }
+        $this->_tag3 = $tag3;
+    }
+
     public function returnUserAsArray() {
         $user = array();
         $user['id'] = $this->getID();
@@ -108,6 +174,12 @@ class User {
         $user['UserActive'] = $this->getUseractive();
         $user['AccountType'] = $this->getAccounttype();
         $user['LoginAttempts'] = $this->getLoginattempts();
+        $user['Organization'] = $this->getOrganization();
+        $user['Website'] = $this->getWebsite();
+        $user['Tag1'] = $this->getTag1();
+        $user['Tag2'] = $this->getTag2();
+        $user['Tag3'] = $this->getTag3();
+
         return $user;
     }
 
