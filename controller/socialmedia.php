@@ -307,6 +307,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         $response->send();
         exit;
     }
+
     try {
         $query = $writeDB->prepare("show columns from tblsocialmedia like '$jsonDataKeyClean'");
         $query->execute();
@@ -335,6 +336,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
             $query->bindParam(':jsondatavalue', $jsonDataValue, PDO::PARAM_STR);
             $query->bindParam(':userid', $returned_userid, PDO::PARAM_INT);
             $query->execute();
+            // there is a bug here on the local testing environment, works fine though in live
 
             $rowCount = $query->rowCount();
 

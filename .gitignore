@@ -14,6 +14,7 @@
 *no authentication.php
 *.svg
 *.htaccess
+*.ffs_db
 /index.html
 /console_log.php
 /assets
