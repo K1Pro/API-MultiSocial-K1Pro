@@ -115,7 +115,7 @@ catch(PDOException $ex) {
 if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     try{
         $active = 'true';
-        $query = $readDB->prepare('select * from tblposts where organization = :organization');
+        $query = $readDB->prepare('select * from tblposts where organization = :organization ORDER BY date DESC');
         $query->bindParam(':organization', $returned_organization, PDO::PARAM_STR);
         $query->execute();
 
