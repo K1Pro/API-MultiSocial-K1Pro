@@ -16,9 +16,10 @@ class User {
     private $_tag1;
     private $_tag2;
     private $_tag3;
+    private $_pexels;
 
 
-    public function __construct($id, $firstname, $username, $email, $useractive, $accounttype, $loginattempts, $organization, $website, $tag1, $tag2, $tag3) {
+    public function __construct($id, $firstname, $username, $email, $useractive, $accounttype, $loginattempts, $organization, $website, $tag1, $tag2, $tag3, $pexels) {
         $this->setID($id);
         $this->setFirstname($firstname);
         $this->setUsername($username);
@@ -31,6 +32,7 @@ class User {
         $this->setTag1($tag1);
         $this->setTag2($tag2);
         $this->setTag3($tag3);
+        $this->setPexels($pexels);
     }
 
     public function getID() {
@@ -79,6 +81,10 @@ class User {
 
     public function getTag3() {
         return $this->_tag3;
+    }
+
+    public function getPexels() {
+        return $this->_pexels;
     }
 
     public function setID($id) {
@@ -165,6 +171,13 @@ class User {
         $this->_tag3 = $tag3;
     }
 
+    public function setPexels($pexels) {
+        if (strlen($pexels) < 0 || strlen($pexels) > 1000) {
+            throw new UserException('Pexels API Key error');
+        }
+        $this->_pexels = $pexels;
+    }
+
     public function returnUserAsArray() {
         $user = array();
         $user['id'] = $this->getID();
@@ -179,6 +192,7 @@ class User {
         $user['Tag1'] = $this->getTag1();
         $user['Tag2'] = $this->getTag2();
         $user['Tag3'] = $this->getTag3();
+        $user['Pexels'] = $this->getPexels();
 
         return $user;
     }
