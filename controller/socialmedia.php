@@ -382,7 +382,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
 
         $query = $writeDB->prepare("update tblsocialmedia set ".$jsonDataKeyClean." = :jsondatavalue where website = :website and userid = :userid");
         $query->bindParam(':jsondatavalue', $jsonDataValue, PDO::PARAM_STR);
-        $query->bindParam(':website', $website, PDO::PARAM_INT);
+        $query->bindParam(':website', $website, PDO::PARAM_STR);
         $query->bindParam(':userid', $returned_userid, PDO::PARAM_INT);
         $query->execute();
 
@@ -397,8 +397,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
             exit;
         }
 
+        $query = $writeDB->prepare('UPDATE tblusers SET SMParams = JSON_REPLACE(SMParams, "$.'.$website.'.'.$jsonDataKeyClean.'", "'.$jsonDataValueClean.'") WHERE id = :userid');
+        $query->bindParam(':userid', $returned_userid, PDO::PARAM_INT);
+        $query->execute();
+
         $query = $writeDB->prepare("select id, website, ".$jsonDataKeyClean.", userid from tblsocialmedia where website = :website and userid = :userid and ".$jsonDataKeyClean." = :jsondatavalue");
-        $query->bindParam(':website', $website, PDO::PARAM_INT);
+        $query->bindParam(':website', $website, PDO::PARAM_STR);
         $query->bindParam(':userid', $returned_userid, PDO::PARAM_INT);
         $query->bindParam(':jsondatavalue', $jsonDataValue, PDO::PARAM_STR);
         $query->execute();
@@ -421,6 +425,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         $response = new Response();
         $response->setHttpStatusCode(201);
         $response->setSuccess(true);
+        // $response->addMessage($textcustom);
         $response->addMessage('Social media group updated');
         $response->setData($returnData);
         $response->send();
