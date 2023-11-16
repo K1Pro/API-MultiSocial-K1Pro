@@ -41,16 +41,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
             foreach ($smParams as $smParamsArray) {
                 $i = 0;
                 foreach ($smParamsArray as $key => $value) {
-                    if ($value == 'false') {
-                        unset($smParamsArray[$key]);
-                    } elseif ($value == 'true') {
-                        $i++;
-                        $smParamsArray['param' . $i] = $key;
-                        unset($smParamsArray[$key]);
-                    }
+                        if ($value == 'false') {
+                            unset($smParamsArray[$key]);
+                        } elseif ($value == 'true') {
+                            $i++;
+                            $smParamsArray['param' . $i] = $key;
+                            unset($smParamsArray[$key]);
+                        }
                 }
                 unset($smParamsArray['id']);
-                array_push($trueParams, $smParamsArray);
+                if ($smParamsArray['active'] == 'yes'){
+                    unset($smParamsArray['active']);
+                    array_push($trueParams, $smParamsArray);
+                }
             }
 
             // $trueArray = array_column($trueParams, null, 'website'); This creates an associative array

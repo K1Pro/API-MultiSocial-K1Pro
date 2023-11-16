@@ -323,100 +323,65 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
             exit;
         }
 
-        $query = $writeDB->prepare('select id from tblsocialmedia where website = :website and userid = :userid');
-        $query->bindParam(':website', $website, PDO::PARAM_STR);
+        // Search using JSON_CONTAINS_PATH is working vvvvvvvvvvvvvvvvv
+        // $querytwo = $writeDB->prepare('SELECT JSON_CONTAINS_PATH(SMParams, "all", "$.'.$website.'") FROM tblusers WHERE id = :userid');
+        // $querytwo->bindParam(':userid', $returned_userid, PDO::PARAM_INT);
+        // $querytwo->execute();
+
+        // Inserts JSON into field
+        $query = $writeDB->prepare('UPDATE tblusers SET SMParams = JSON_SET(SMParams, "$.'.$website.'.'.$jsonDataKeyClean.'", "'.$jsonDataValueClean.'") WHERE id = :userid');
         $query->bindParam(':userid', $returned_userid, PDO::PARAM_INT);
         $query->execute();
 
         $rowCount = $query->rowCount();
 
         if($rowCount === 0) {
-            $query = $writeDB->prepare("insert into tblsocialmedia (website, ".$jsonDataKeyClean.", userid) values (:website, :jsondatavalue, :userid)");
-            $query->bindParam(':website', $website, PDO::PARAM_STR);
-            $query->bindParam(':jsondatavalue', $jsonDataValue, PDO::PARAM_STR);
+            // Inserts JSON objects are not present from above query JSON objects will be inserted into field
+            $query = $writeDB->prepare('UPDATE tblusers SET SMParams = JSON_SET(COALESCE(SMParams, "{}"), COALESCE("$.'.$website.'", "'.$website.'.'.$jsonDataKeyClean.'"), JSON_OBJECT("'.$jsonDataKeyClean.'", "'.$jsonDataValueClean.'"))  WHERE id = :userid');
             $query->bindParam(':userid', $returned_userid, PDO::PARAM_INT);
             $query->execute();
-            // there is a bug here on the local testing environment, works fine though in live
-
             $rowCount = $query->rowCount();
 
             if($rowCount === 0) {
                 $response = new Response();
-                $response->setHttpStatusCode(500);
+                $response->setHttpStatusCode(400);
                 $response->setSuccess(false);
-                $response->addMessage('Failed to create social media group');
+                $response->addMessage('Social media group not updated');
                 $response->send();
                 exit;
-            }
-
-            $lastSocialMediaGroupID = $writeDB->lastInsertId();
-
-            $query = $writeDB->prepare("select id, website, ".$jsonDataKeyClean.", userid from tblsocialmedia where id = :socialmediaid and userid = :userid");
-            $query->bindParam(':socialmediaid', $lastSocialMediaGroupID, PDO::PARAM_INT);
-            $query->bindParam(':userid', $returned_userid, PDO::PARAM_INT);
-            $query->execute();
-
-            $rowCount = $query->rowCount();
-
-            if($rowCount === 0) {
+            } else {
+                $returnData = array();
+                $returnData['rows_returned'] = $rowCount;
+                $returnData['sm_group'] = $query->fetch(PDO::FETCH_ASSOC);
+        
                 $response = new Response();
-                $response->setHttpStatusCode(500);
-                $response->setSuccess(false);
-                $response->addMessage('Failed to retrieve social media group after creation');
+                $response->setHttpStatusCode(201);
+                $response->setSuccess(true);
+                $response->addMessage('Social media group created');
+                $response->setData($returnData);
                 $response->send();
                 exit;
             }
-
-            $returnData = array();
-            $returnData['rows_returned'] = $rowCount;
-            $returnData['sm_group'] = $query->fetch(PDO::FETCH_ASSOC);
-    
-            $response = new Response();
-            $response->setHttpStatusCode(201);
-            $response->setSuccess(true);
-            $response->addMessage('Social media group created');
-            $response->setData($returnData);
-            $response->send();
-            exit;
         }
 
-        $query = $writeDB->prepare("update tblsocialmedia set ".$jsonDataKeyClean." = :jsondatavalue where website = :website and userid = :userid");
-        $query->bindParam(':jsondatavalue', $jsonDataValue, PDO::PARAM_STR);
-        $query->bindParam(':website', $website, PDO::PARAM_STR);
-        $query->bindParam(':userid', $returned_userid, PDO::PARAM_INT);
-        $query->execute();
+        // this was working before JSON conversion, it is used for validating inserted data, try to revive it using JSON_CONTAINS_PATH  vvvvvvvvvvvvvv
+        // $query = $writeDB->prepare("select id, website, ".$jsonDataKeyClean.", userid from tblsocialmedia where website = :website and userid = :userid and ".$jsonDataKeyClean." = :jsondatavalue");
+        // $query->bindParam(':website', $website, PDO::PARAM_STR);
+        // $query->bindParam(':userid', $returned_userid, PDO::PARAM_INT);
+        // $query->bindParam(':jsondatavalue', $jsonDataValue, PDO::PARAM_STR);
+        // $query->execute();
 
-        $rowCount = $query->rowCount();
+        // $rowCount = $query->rowCount();
 
-        if($rowCount === 0) {
-            $response = new Response();
-            $response->setHttpStatusCode(400);
-            $response->setSuccess(false);
-            $response->addMessage('Social media group not updated');
-            $response->send();
-            exit;
-        }
-
-        $query = $writeDB->prepare('UPDATE tblusers SET SMParams = JSON_REPLACE(SMParams, "$.'.$website.'.'.$jsonDataKeyClean.'", "'.$jsonDataValueClean.'") WHERE id = :userid');
-        $query->bindParam(':userid', $returned_userid, PDO::PARAM_INT);
-        $query->execute();
-
-        $query = $writeDB->prepare("select id, website, ".$jsonDataKeyClean.", userid from tblsocialmedia where website = :website and userid = :userid and ".$jsonDataKeyClean." = :jsondatavalue");
-        $query->bindParam(':website', $website, PDO::PARAM_STR);
-        $query->bindParam(':userid', $returned_userid, PDO::PARAM_INT);
-        $query->bindParam(':jsondatavalue', $jsonDataValue, PDO::PARAM_STR);
-        $query->execute();
-
-        $rowCount = $query->rowCount();
-
-        if($rowCount === 0) {
-            $response = new Response();
-            $response->setHttpStatusCode(404);
-            $response->setSuccess(false);
-            $response->addMessage('No social media group found after update');
-            $response->send();
-            exit;
-        }
+        // if($rowCount === 0) {
+        //     $response = new Response();
+        //     $response->setHttpStatusCode(404);
+        //     $response->setSuccess(false);
+        //     $response->addMessage('No social media group found after update');
+        //     $response->send();
+        //     exit;
+        // }
+        // this was working before JSON conversion  ^^^^^^^^^^^^^^^^^^^^^^^^
 
         $returnData = array();
         $returnData['rows_returned'] = $rowCount;
@@ -425,7 +390,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         $response = new Response();
         $response->setHttpStatusCode(201);
         $response->setSuccess(true);
-        // $response->addMessage($textcustom);
         $response->addMessage('Social media group updated');
         $response->setData($returnData);
         $response->send();
