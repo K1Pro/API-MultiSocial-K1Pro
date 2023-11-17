@@ -18,9 +18,10 @@ class User {
     private $_tag3;
     private $_pexels;
     private $_smparams;
+    private $_smposts;
 
 
-    public function __construct($id, $firstname, $username, $email, $useractive, $accounttype, $loginattempts, $organization, $website, $tag1, $tag2, $tag3, $pexels, $smparams) {
+    public function __construct($id, $firstname, $username, $email, $useractive, $accounttype, $loginattempts, $organization, $website, $tag1, $tag2, $tag3, $pexels, $smparams, $smposts) {
         $this->setID($id);
         $this->setFirstname($firstname);
         $this->setUsername($username);
@@ -35,6 +36,7 @@ class User {
         $this->setTag3($tag3);
         $this->setPexels($pexels);
         $this->setSMParams($smparams);
+        $this->setSMPosts($smposts);
     }
 
     public function getID() {
@@ -91,6 +93,10 @@ class User {
 
     public function getSMParams() {
         return $this->_smparams;
+    }
+
+    public function getSMPosts() {
+        return $this->_smposts;
     }
 
     public function setID($id) {
@@ -188,6 +194,10 @@ class User {
         $this->_smparams = json_decode($smparams);
     }
 
+    public function setSMPosts($smposts) {
+        $this->_smposts = json_decode($smposts);
+    }
+
     public function returnUserAsArray() {
         $user = array();
         $user['id'] = $this->getID();
@@ -204,6 +214,7 @@ class User {
         $user['Tag3'] = $this->getTag3();
         $user['Pexels'] = $this->getPexels();
         $user['SMParams'] = $this->getSMParams();
+        $user['SMPosts'] = $this->getSMPosts();
 
         return $user;
     }
