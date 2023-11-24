@@ -8,9 +8,8 @@ class User {
     private $_firstname;
     private $_username;
     private $_email;
-    private $_useractive;
-    private $_accounttype;
-    private $_loginattempts;
+    private $_appuseractive;
+    private $_appaccounttype;
     private $_organization;
     private $_website;
     private $_tag1;
@@ -21,14 +20,13 @@ class User {
     private $_smposts;
 
 
-    public function __construct($id, $firstname, $username, $email, $useractive, $accounttype, $loginattempts, $organization, $website, $tag1, $tag2, $tag3, $pexels, $smparams, $smposts) {
+    public function __construct($id, $firstname, $username, $email, $appuseractive, $appaccounttype, $organization, $website, $tag1, $tag2, $tag3, $pexels, $smparams, $smposts) {
         $this->setID($id);
         $this->setFirstname($firstname);
         $this->setUsername($username);
         $this->setEmail($email);
-        $this->setUseractive($useractive);
-        $this->setAccounttype($accounttype);
-        $this->setLoginattempts($loginattempts);
+        $this->setAppuseractive($appuseractive);
+        $this->setAppaccounttype($appaccounttype);
         $this->setOrganization($organization);
         $this->setWebsite($website);
         $this->setTag1($tag1);
@@ -55,16 +53,12 @@ class User {
         return $this->_email;
     }
 
-    public function getUseractive() {
-        return $this->_useractive;
+    public function getAppuseractive() {
+        return $this->_appuseractive;
     }
 
-    public function getAccounttype() {
-        return $this->_accounttype;
-    }
-
-    public function getLoginattempts() {
-        return $this->_loginattempts;
+    public function getAppaccounttype() {
+        return $this->_appaccounttype;
     }
 
     public function getOrganization() {
@@ -127,25 +121,18 @@ class User {
         $this->_email = $email;
     }
 
-    public function setUseractive($useractive) {
-        if(strtoupper($useractive) !== 'Y' && strtoupper($useractive) !== 'N') {
-            throw new UserException('User useractive date time error');
+    public function setAppuseractive($appuseractive) {
+        if(strtoupper($appuseractive) !== 'Y' && strtoupper($appuseractive) !== 'N') {
+            throw new UserException('App useractive error');
         }
-        $this->_useractive = $useractive;
+        $this->_appuseractive = $appuseractive;
     }
 
-    public function setAccounttype($accounttype) {
-        if(strtolower($accounttype) !== 'administrator' && strtolower($accounttype) !== 'user') {
+    public function setAppaccounttype($appaccounttype) {
+        if(strtolower($appaccounttype) !== 'administrator' && strtolower($appaccounttype) !== 'user') {
             throw new UserException('User account type error');
         }
-        $this->_accounttype = $accounttype;
-    }
-
-    public function setLoginattempts($loginattempts) {
-        if(($loginattempts !== null ) && (!is_numeric($loginattempts) || $loginattempts <= -1 || $loginattempts > 100)){
-            throw new UserException('User loginattempts error');
-        }
-        $this->_loginattempts = $loginattempts;
+        $this->_appaccounttype = $appaccounttype;
     }
 
     public function setOrganization($organization) {
@@ -204,9 +191,8 @@ class User {
         $user['FirstName'] = $this->getFirstname();
         $user['Username'] = $this->getUsername();
         $user['Email'] = $this->getEmail();
-        $user['UserActive'] = $this->getUseractive();
-        $user['AccountType'] = $this->getAccounttype();
-        $user['LoginAttempts'] = $this->getLoginattempts();
+        $user['AppUserActive'] = $this->getAppuseractive();
+        $user['AppAccountType'] = $this->getAppaccounttype();
         $user['Organization'] = $this->getOrganization();
         $user['Website'] = $this->getWebsite();
         $user['Tag1'] = $this->getTag1();

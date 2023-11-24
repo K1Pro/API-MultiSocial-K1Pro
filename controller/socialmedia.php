@@ -1,9 +1,12 @@
 <?php
 
+require_once('../../../../login/v001/public/controller/components/logindb.php');
 require_once('db.php');
+require_once('../../../../login/v001/public/model/ValidLogin.php');
 require_once('../model/Response.php');
 
 try{
+    $loginDB = DBlogin::connectLoginDB();
     $writeDB = DB::connectWriteDB();
     $readDB = DB::connectReadDB();
 }
@@ -17,7 +20,7 @@ catch(PDOException $ex) {
     exit;
 }
 
-if($_SERVER['REQUEST_METHOD'] !== 'OPTIONS' && $_SERVER['REQUEST_METHOD'] !== 'GET' && $_SERVER['REQUEST_METHOD'] !== 'PATCH'){
+if($_SERVER['REQUEST_METHOD'] !== 'OPTIONS' && $_SERVER['REQUEST_METHOD'] !== 'PATCH'){
     $response = new Response();
     $response->setHttpStatusCode(405);
     $response->setSuccess(false);
@@ -26,233 +29,11 @@ if($_SERVER['REQUEST_METHOD'] !== 'OPTIONS' && $_SERVER['REQUEST_METHOD'] !== 'G
     exit;
 }
 
-// handle options request method for authentication VVVVVV
-if($_SERVER['REQUEST_METHOD'] === 'OPTIONS'){
-    $response = new Response();
-    $response->setHttpStatusCode(200);
-    $response->setSuccess(true);
-    $response->send();
-    exit;
-}
-// handle options request method for authentication ^^^^^^
-    
-// begin authentication script
-if(!isset($_SERVER[$CUSTOM_AUTHORIZATION]) || strlen($_SERVER[$CUSTOM_AUTHORIZATION]) < 1) {
-    $response = new Response();
-    $response->setHttpStatusCode(401);
-    $response->setSuccess(false);
-    (!isset($_SERVER[$CUSTOM_AUTHORIZATION]) ? $response->addMessage('Access token is missing from the header') : false);
-    (strlen($_SERVER[$CUSTOM_AUTHORIZATION]) < 1 ? $response->addMessage('Access token cannot be blank') : false);
-    $response->send();
-    exit();
-}
+// loads the authentication module
+require_once('../../../../login/v001/public/controller/components/authentication.php');
+// returns $loggedin_userid
 
-$accesstoken = $_SERVER[$CUSTOM_AUTHORIZATION];
-
-try{
-
-    $query = $writeDB->prepare('select userid, accesstokenexpiry, UserActive, LoginAttempts from tblsessions, tblusers where tblsessions.userid = tblusers.id and accesstoken = :accesstoken');
-    $query->bindParam(':accesstoken', $accesstoken, PDO::PARAM_STR);
-    $query->execute();
-    
-    $rowCount = $query->rowCount();
-
-    if ($rowCount === 0) {
-        $response = new Response();
-        $response->setHttpStatusCode(401);
-        $response->setSuccess(false);
-        $response->addMessage('Invalid access token');
-        $response->send();
-        exit();
-    }
-
-    $row = $query->fetch(PDO::FETCH_ASSOC);
-
-    $returned_userid = $row['userid'];
-    $returned_accesstokenexpiry = $row['accesstokenexpiry'];
-    $returned_useractive = $row['UserActive'];
-    $returned_loginattempts = $row['LoginAttempts'];
-
-    if ($returned_useractive !== 'Y') {
-        $response = new Response();
-        $response->setHttpStatusCode(401);
-        $response->setSuccess(false);
-        $response->addMessage('User account not active');
-        $response->send();
-        exit();
-    }
-
-    if($returned_loginattempts >= 3) {
-        $response = new Response();
-        $response->setHttpStatusCode(401);
-        $response->setSuccess(false);
-        $response->addMessage('User account is currently locked out');
-        $response->send();
-        exit();
-    }
-
-    if (strtotime($returned_accesstokenexpiry) < time()){
-        $response = new Response();
-        $response->setHttpStatusCode(401);
-        $response->setSuccess(false);
-        $response->addMessage('Access token expired');
-        $response->send();
-        exit();
-    }
-}
-catch(PDOException $ex) {
-    $response = new Response();
-    $response->setHttpStatusCode(500);
-    $response->setSuccess(false);
-    $response->addMessage('There was an issue authenticating - please try again');
-    $response->send();
-    exit();
-}
-// end authentication script
-
-if ($_SERVER['REQUEST_METHOD'] === 'GET') {
-    
-    if(array_key_exists('smwebsite',$_GET)) {
-        $smwebsite = $_GET['smwebsite'];
-        try{
-            $query = $readDB->prepare('select * from tblsocialmedia where website = :smwebsite and userid = :userid');
-            $query->bindParam(':smwebsite', $smwebsite, PDO::PARAM_INT);
-            $query->bindParam(':userid', $returned_userid, PDO::PARAM_INT);
-            $query->execute();
-
-            $rowCount = $query->rowCount();
-
-            if($rowCount === 0) {
-                $response = new Response();
-                $response->setHttpStatusCode(404);
-                $response->setSuccess(false);
-                $response->addMessage('Social media group not found');
-                $response->send();
-                exit;
-            }
-
-            // while($row = $query->fetch(PDO::FETCH_ASSOC)) {
-            //     $task = new Task($row['id'], $row['title'], $row['description'], $row['deadline'], $row['completed']);
-            //     $taskArray[] = $task->returnTaskAsArray();
-            // }
-
-            $returnData = array();
-            $returnData['rows_returned'] = $rowCount;
-            $returnData['sm_group'] = $query->fetch(PDO::FETCH_ASSOC);
-
-            $response = new Response();
-            $response->setHttpStatusCode(200);
-            $response->setSuccess(true);
-            $response->addMessage('Social media group found');
-            // $response->toCache(true);
-            $response->setData($returnData);
-            $response->send();
-            exit;
-        }
-        catch(PDOException $ex){
-            error_log('Database query error - '.$ex, 0);
-            $response = new Response();
-            $response->setHttpStatusCode(500);
-            $response->setSuccess(false);
-            $response->addMessage('Failed to get social media group');
-            $response->send();
-            exit();
-        }
-
-    } elseif (array_key_exists('active', $_GET)){
-        $active = $_GET['active'];
-
-        if($active !== 'true' && $active !== 'false'){
-            $response = new Response();
-            $response->setHttpStatusCode(400);
-            $response->setSuccess(false);
-            $response->addMessage('Active filter must be true or false');
-            $response->send();
-            exit;
-        }
-
-        try{
-            $query = $readDB->prepare('select * from tblsocialmedia where active = :active and userid = :userid');
-            $query->bindParam(':active', $active, PDO::PARAM_STR);
-            $query->bindParam(':userid', $returned_userid, PDO::PARAM_INT);
-            $query->execute();
-
-            $rowCount = $query->rowCount();
-
-            if($rowCount === 0) {
-                $response = new Response();
-                $response->setHttpStatusCode(404);
-                $response->setSuccess(false);
-                $response->addMessage('No active social media groups found');
-                $response->send();
-                exit;
-            }
-
-            $returnData = array();
-            $returnData['rows_returned'] = $rowCount;
-            $returnData['sm_group'] = $query->fetchAll(PDO::FETCH_ASSOC);
-
-            $response = new Response;
-            $response->setHttpStatusCode(200);
-            $response->setSuccess(true);
-            $response->addMessage('Active social media groups found');
-            // $response->toCache(true);
-            $response->setData($returnData);
-            $response->send();
-            exit;
-        }
-        catch (PDOException $ex){
-            error_log('Database query error -'.$ex, 0);
-            $response = new Response();
-            $response->setHttpStatusCode(500);
-            $response->setSuccess(false);
-            $response->addMessage('Failed to get active social media groups');
-            $response->send();
-            exit;
-        }
-
-    } elseif (empty($_GET)) {
-        try{
-            $query = $readDB->prepare('select * from tblsocialmedia where userid = :userid');
-            $query->bindParam(':userid', $returned_userid, PDO::PARAM_INT);
-            $query->execute();
-
-            $rowCount = $query->rowCount();
-
-            if($rowCount === 0) {
-                $response = new Response();
-                $response->setHttpStatusCode(404);
-                $response->setSuccess(false);
-                $response->addMessage('Social media groups not found');
-                $response->send();
-                exit;
-            }
-
-            $returnData = array();
-            $returnData['rows_returned'] = $rowCount;
-            $returnData['sm_groups'] = $query->fetchAll(PDO::FETCH_ASSOC);
-
-            $response = new Response();
-            $response->setHttpStatusCode(200);
-            $response->setSuccess(true);
-            $response->addMessage('Social media groups found');
-            // $response->toCache(true);
-            $response->setData($returnData);
-            $response->send();
-            exit;
-        }
-        catch(PDOException $ex){
-            error_log('Database query error - '.$ex, 0);
-            $response = new Response();
-            $response->setHttpStatusCode(500);
-            $response->setSuccess(false);
-            $response->addMessage('Failed to get social media groups');
-            $response->send();
-            exit();
-        }
-
-    }
-} elseif ($_SERVER['REQUEST_METHOD'] === 'PATCH') {
+if ($_SERVER['REQUEST_METHOD'] === 'PATCH') {
     if($_SERVER['CONTENT_TYPE'] !== 'application/json') {
         $response = new Response();
         $response->setHttpStatusCode(400);
@@ -309,7 +90,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     }
 
     try {
-        $query = $writeDB->prepare("show columns from tblsocialmedia like '$jsonDataKeyClean'");
+        $query = $writeDB->prepare("show columns from tblsmparams like '$jsonDataKeyClean'");
         $query->execute();
 
         $rowCount = $query->rowCount();
@@ -318,19 +99,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
             $response = new Response();
             $response->setHttpStatusCode(400);
             $response->setSuccess(false);
-            $response->addMessage('Incorrect social media parameter provided');
+            $response->addMessage('Invalid social media param');
             $response->send();
             exit;
         }
 
         // Search using JSON_CONTAINS_PATH is working vvvvvvvvvvvvvvvvv
         // $querytwo = $writeDB->prepare('SELECT JSON_CONTAINS_PATH(SMParams, "all", "$.'.$website.'") FROM tblusers WHERE id = :userid');
-        // $querytwo->bindParam(':userid', $returned_userid, PDO::PARAM_INT);
+        // $querytwo->bindParam(':userid', $loggedin_userid, PDO::PARAM_INT);
         // $querytwo->execute();
 
         // Inserts JSON into field
         $query = $writeDB->prepare('UPDATE tblusers SET SMParams = JSON_SET(SMParams, "$.'.$website.'.'.$jsonDataKeyClean.'", "'.$jsonDataValueClean.'") WHERE id = :userid');
-        $query->bindParam(':userid', $returned_userid, PDO::PARAM_INT);
+        $query->bindParam(':userid', $loggedin_userid, PDO::PARAM_INT);
         $query->execute();
 
         $rowCount = $query->rowCount();
@@ -338,7 +119,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         if($rowCount === 0) {
             // Inserts JSON objects are not present from above query JSON objects will be inserted into field
             $query = $writeDB->prepare('UPDATE tblusers SET SMParams = JSON_SET(COALESCE(SMParams, "{}"), COALESCE("$.'.$website.'", "'.$website.'.'.$jsonDataKeyClean.'"), JSON_OBJECT("'.$jsonDataKeyClean.'", "'.$jsonDataValueClean.'"))  WHERE id = :userid');
-            $query->bindParam(':userid', $returned_userid, PDO::PARAM_INT);
+            $query->bindParam(':userid', $loggedin_userid, PDO::PARAM_INT);
             $query->execute();
             $rowCount = $query->rowCount();
 
@@ -367,7 +148,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         // this was working before JSON conversion, it is used for validating inserted data, try to revive it using JSON_CONTAINS_PATH  vvvvvvvvvvvvvv
         // $query = $writeDB->prepare("select id, website, ".$jsonDataKeyClean.", userid from tblsocialmedia where website = :website and userid = :userid and ".$jsonDataKeyClean." = :jsondatavalue");
         // $query->bindParam(':website', $website, PDO::PARAM_STR);
-        // $query->bindParam(':userid', $returned_userid, PDO::PARAM_INT);
+        // $query->bindParam(':userid', $loggedin_userid, PDO::PARAM_INT);
         // $query->bindParam(':jsondatavalue', $jsonDataValue, PDO::PARAM_STR);
         // $query->execute();
 
