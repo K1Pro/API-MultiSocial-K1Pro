@@ -76,19 +76,27 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (!$DictionaryResponse->title) {
         $generatedText = htmlspecialchars(trim(json_encode($DictionaryResponse[0])));
 
-        $query = $writeDB->prepare('UPDATE tblusers SET GeneratedText = JSON_SET(COALESCE(GeneratedText, "{}"), "$.'.$keyword.'", "'.$generatedText.'") WHERE id = :userid');
+        $query = $writeDB->prepare('SELECT JSON_CONTAINS_PATH(GeneratedText, "all", "$.'.$keyword.'") FROM tblusers WHERE id = :userid');
         $query->bindParam(':userid', $loggedin_userid, PDO::PARAM_INT);
         $query->execute();
 
-        $rowCount = $query->rowCount();
+        $rowCount = $query->fetch(PDO::FETCH_NUM)[0];
 
         if($rowCount === 0) {
-            $response = new Response();
-            $response->setHttpStatusCode(400);
-            $response->setSuccess(false);
-            $response->addMessage('Generated text not updated');
-            $response->send();
-            exit;
+            $query = $writeDB->prepare('UPDATE tblusers SET GeneratedText = JSON_SET(COALESCE(GeneratedText, "{}"), "$.'.$keyword.'", "'.$generatedText.'") WHERE id = :userid');
+            $query->bindParam(':userid', $loggedin_userid, PDO::PARAM_INT);
+            $query->execute();
+
+            $rowCount = $query->rowCount();
+
+            if($rowCount === 0) {
+                $response = new Response();
+                $response->setHttpStatusCode(400);
+                $response->setSuccess(false);
+                $response->addMessage('Generated text not updated');
+                $response->send();
+                exit;
+            }
         }
     }
 
