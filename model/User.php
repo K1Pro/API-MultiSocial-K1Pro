@@ -18,9 +18,11 @@ class User {
     private $_pexels;
     private $_smparams;
     private $_smposts;
+    private $_generatedtext;
+    private $_searchedphotos;
 
 
-    public function __construct($id, $firstname, $username, $email, $appuseractive, $appaccounttype, $organization, $website, $tag1, $tag2, $tag3, $pexels, $smparams, $smposts) {
+    public function __construct($id, $firstname, $username, $email, $appuseractive, $appaccounttype, $organization, $website, $tag1, $tag2, $tag3, $pexels, $smparams, $smposts, $generatedtext, $searchedphotos) {
         $this->setID($id);
         $this->setFirstname($firstname);
         $this->setUsername($username);
@@ -35,6 +37,8 @@ class User {
         $this->setPexels($pexels);
         $this->setSMParams($smparams);
         $this->setSMPosts($smposts);
+        $this->setGeneratedtext($generatedtext);
+        $this->setSearchedphotos($searchedphotos);
     }
 
     public function getID() {
@@ -91,6 +95,14 @@ class User {
 
     public function getSMPosts() {
         return $this->_smposts;
+    }
+
+    public function getGeneratedtext() {
+        return $this->_generatedtext;
+    }
+
+    public function getSearchedphotos() {
+        return $this->_searchedphotos;
     }
 
     public function setID($id) {
@@ -184,6 +196,19 @@ class User {
     public function setSMPosts($smposts) {
         $this->_smposts = json_decode($smposts);
     }
+    
+    public function setGeneratedtext($generatedtext) {
+        $decodedGeneratedtext = json_decode($generatedtext);
+        $decodedGeneratedtext_noSpecialChars = [];
+        foreach ($decodedGeneratedtext as $key => $value) {
+            $decodedGeneratedtext_noSpecialChars[$key] =  json_decode(htmlspecialchars_decode($value));
+        }
+        $this->_generatedtext = $decodedGeneratedtext_noSpecialChars;
+    }
+
+    public function setSearchedphotos($searchedphotos) {
+        $this->_searchedphotos = json_decode($searchedphotos);
+    }
 
     public function returnUserAsArray() {
         $user = array();
@@ -201,6 +226,8 @@ class User {
         $user['Pexels'] = $this->getPexels();
         $user['SMParams'] = $this->getSMParams();
         $user['SMPosts'] = $this->getSMPosts();
+        $user['GeneratedText'] = $this->getGeneratedtext();
+        $user['SearchedPhotos'] = $this->getSearchedphotos();
 
         return $user;
     }
