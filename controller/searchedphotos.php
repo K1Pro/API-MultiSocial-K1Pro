@@ -4,7 +4,6 @@ require_once('../../../../login/v001/public/controller/components/logindb.php');
 require_once('db.php');
 require_once('../../../../login/v001/public/model/ValidLogin.php');
 require_once('../model/Response.php');
-require_once('textalgorithm.php');
 
 try{
     $loginDB = DBlogin::connectLoginDB();
@@ -65,53 +64,45 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     $keyword = htmlspecialchars(trim($jsonData->Keyword));
-    $keywordArray = array_unique(preg_split("/[-_ ]+|(?=[A-Z])/", $keyword));
 
-    $DictionaryResponses = array();
+    $ch = curl_init();
+    $URLRequest = "https://api.dictionaryapi.dev/api/v2/entries/en/".$keyword;
+    curl_setopt($ch, CURLOPT_URL,$URLRequest);
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    $response = curl_exec($ch);
+    curl_close ($ch);
+    $DictionaryResponse = json_decode($response);
 
-    foreach ($keywordArray as $uniqueKeyword) {
-        if ($uniqueKeyword != "" && !in_array(strtolower($uniqueKeyword), $artsPreps)){
-            $uniqueLowerKeyword = strtolower($uniqueKeyword);
-            $query = $writeDB->prepare('SELECT JSON_CONTAINS_PATH(GeneratedText, "all", "$.'.$uniqueLowerKeyword.'") FROM tblusers WHERE id = :userid');
+    if (!$DictionaryResponse->title) {
+        $generatedText = htmlspecialchars(trim(json_encode($DictionaryResponse[0])));
+
+        $query = $writeDB->prepare('SELECT JSON_CONTAINS_PATH(GeneratedText, "all", "$.'.$keyword.'") FROM tblusers WHERE id = :userid');
+        $query->bindParam(':userid', $loggedin_userid, PDO::PARAM_INT);
+        $query->execute();
+
+        $rowCount = $query->fetch(PDO::FETCH_NUM)[0];
+
+        if($rowCount === 0) {
+            $query = $writeDB->prepare('UPDATE tblusers SET GeneratedText = JSON_SET(COALESCE(GeneratedText, "{}"), "$.'.$keyword.'", "'.$generatedText.'") WHERE id = :userid');
             $query->bindParam(':userid', $loggedin_userid, PDO::PARAM_INT);
             $query->execute();
-        
-            $rowCount = $query->fetch(PDO::FETCH_NUM)[0]; 
-    
-            if($rowCount === 0 || $rowCount === null) {
-                $ch = curl_init();
-                $URLRequest = "https://api.dictionaryapi.dev/api/v2/entries/en/".$uniqueLowerKeyword;
-                curl_setopt($ch, CURLOPT_URL,$URLRequest);
-                curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-                $response = curl_exec($ch);
-                curl_close ($ch);
-                $DictionaryResponse = json_decode($response);
-        
-                $generatedText = htmlspecialchars(trim(json_encode($DictionaryResponse[0])));
-                array_push($DictionaryResponses, $DictionaryResponse[0]);   
-        
-                $query = $writeDB->prepare('UPDATE tblusers SET GeneratedText = JSON_SET(COALESCE(GeneratedText, "{}"), "$.'.$uniqueLowerKeyword.'", "'.$generatedText.'") WHERE id = :userid');
-                $query->bindParam(':userid', $loggedin_userid, PDO::PARAM_INT);
-                $query->execute();
-        
-                $rowCount = $query->rowCount();
-        
-                if($rowCount === 0) {
-                    $response = new Response();
-                    $response->setHttpStatusCode(400);
-                    $response->setSuccess(false);
-                    $response->addMessage('Generated text not updated');
-                    $response->send();
-                    exit;
-                }
+
+            $rowCount = $query->rowCount();
+
+            if($rowCount === 0) {
+                $response = new Response();
+                $response->setHttpStatusCode(400);
+                $response->setSuccess(false);
+                $response->addMessage('Generated text not updated');
+                $response->send();
+                exit;
             }
         }
     }
 
     $returnData = array();
     $returnData['keyword'] = $keyword;
-    $returnData['generated_text'] = $DictionaryResponses;
-
+    $returnData['dictionary_api'] = !$DictionaryResponse->title ? $DictionaryResponse[0] : "No entries found";
 
     $response = new Response();
     $response->setHttpStatusCode(201);
