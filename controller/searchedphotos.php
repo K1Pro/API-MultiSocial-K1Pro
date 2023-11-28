@@ -82,7 +82,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     
 
-    $keyword = htmlspecialchars(strtolower(trim($jsonData->PhotoSearch)));
+    $keyword = str_replace(' ', '_', htmlspecialchars(strtolower(trim($jsonData->PhotoSearch))));
     $searchKeyword = urlencode(strtolower(trim($jsonData->PhotoSearch)));
     
     $ch = curl_init();
@@ -100,41 +100,41 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // foreach ($keywordArray as $uniqueKeyword) {
     //     if ($uniqueKeyword != "" && !in_array(strtolower($uniqueKeyword), $artsPreps)){
     //         $uniqueLowerKeyword = strtolower($uniqueKeyword);
-    //         $query = $writeDB->prepare('SELECT JSON_CONTAINS_PATH(GeneratedText, "all", "$.'.$uniqueLowerKeyword.'") FROM tblusers WHERE id = :userid');
-    //         $query->bindParam(':userid', $loggedin_userid, PDO::PARAM_INT);
-    //         $query->execute();
+            $query = $readDB->prepare('SELECT JSON_CONTAINS_PATH(SearchedPhotos, "all", "$.'.$keyword.'") FROM tblusers WHERE id = :userid');
+            $query->bindParam(':userid', $loggedin_userid, PDO::PARAM_INT);
+            $query->execute();
         
-    //         $rowCount = $query->fetch(PDO::FETCH_NUM)[0]; 
+            $rowCount = $query->fetch(PDO::FETCH_NUM)[0];
     
-    //         if($rowCount === 0 || $rowCount === null) {
-    //             $ch = curl_init();
-    //             $URLRequest = "https://api.dictionaryapi.dev/api/v2/entries/en/".$uniqueLowerKeyword;
-    //             curl_setopt($ch, CURLOPT_URL,$URLRequest);
-    //             curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-    //             $response = curl_exec($ch);
-    //             curl_close ($ch);
-    //             $DictionaryResponse = json_decode($response);
+            if($rowCount === 0 || $rowCount === null) {
+                // $ch = curl_init();
+                // $URLRequest = "https://api.dictionaryapi.dev/api/v2/entries/en/".$uniqueLowerKeyword;
+                // curl_setopt($ch, CURLOPT_URL,$URLRequest);
+                // curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+                // $response = curl_exec($ch);
+                // curl_close ($ch);
+                // $DictionaryResponse = json_decode($response);
 
-    //             if ($DictionaryResponse->title != 'No Definitions Found') {                
-    //                 $generatedText = htmlspecialchars(trim(json_encode($DictionaryResponse[0])));
-    //                 array_push($DictionaryResponses, $DictionaryResponse[0]);   
+                if ($PexelsResponse->total_results > 0) {                
+                    $searchedPhotos = htmlspecialchars(trim($response));
+                    // array_push($DictionaryResponses, $DictionaryResponse[0]);   
             
-    //                 $query = $writeDB->prepare('UPDATE tblusers SET GeneratedText = JSON_SET(COALESCE(GeneratedText, "{}"), "$.'.$uniqueLowerKeyword.'", "'.$generatedText.'") WHERE id = :userid');
-    //                 $query->bindParam(':userid', $loggedin_userid, PDO::PARAM_INT);
-    //                 $query->execute();
+                    $query = $writeDB->prepare('UPDATE tblusers SET SearchedPhotos = JSON_SET(COALESCE(SearchedPhotos, "{}"), "$.'.$keyword.'", "'.$searchedPhotos.'") WHERE id = :userid');
+                    $query->bindParam(':userid', $loggedin_userid, PDO::PARAM_INT);
+                    $query->execute();
             
-    //                 $rowCount = $query->rowCount();
+                    $rowCount = $query->rowCount();
             
-    //                 if($rowCount === 0) {
-    //                     $response = new Response();
-    //                     $response->setHttpStatusCode(400);
-    //                     $response->setSuccess(false);
-    //                     $response->addMessage('Generated text not updated');
-    //                     $response->send();
-    //                     exit;
-    //                 }
-    //             }
-    //         }
+                    if($rowCount === 0) {
+                        $response = new Response();
+                        $response->setHttpStatusCode(400);
+                        $response->setSuccess(false);
+                        $response->addMessage('Generated text not updated');
+                        $response->send();
+                        exit;
+                    }
+                }
+            }
     //     }
     // }
 
@@ -144,7 +144,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $returnData['pexelsKey'] = $pexelsKey;
     $returnData['URL_Request'] = $URLRequest;
     $returnData['Pexels_Response'] = $PexelsResponse;
-    // $returnData['generated_text'] = $DictionaryResponses;
+    $returnData['row_count'] = $rowCount;
     // $returnData['generated_text_amount'] = count($DictionaryResponses);
 
     $response = new Response();
