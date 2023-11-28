@@ -54,60 +54,103 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         exit;
     }
 
-    if(strlen($jsonData->Keyword) < 1){
+    if(strlen($jsonData->PhotoSearch) < 1){
         $response = new Response();
         $response->setHttpStatusCode(400);
         $response->setSuccess(false);
-        (strlen($jsonData->Keyword) < 1 ? $response->addMessage('Keyword cannot be blank') : false);
+        (strlen($jsonData->PhotoSearch) < 1 ? $response->addMessage('Keyword cannot be blank') : false);
         $response->send();
         exit;
     }
 
-    $keyword = htmlspecialchars(trim($jsonData->Keyword));
+    $query = $readDB->prepare('SELECT Pexels 
+                                FROM tblusers 
+                                WHERE id = :userid');
+    $query->bindParam(':userid', $loggedin_userid, PDO::PARAM_INT);
+    $query->execute();
 
+    $pexelsKey = $query->fetch(PDO::FETCH_ASSOC)['Pexels'];
+
+    if ($pexelsKey == ''){
+        $response = new Response();
+        $response->setHttpStatusCode(400);
+        $response->setSuccess(false);
+        $response->addMessage('API key for searching images cannot be blank');
+        $response->send();
+        exit;
+    }
+
+    
+
+    $keyword = htmlspecialchars(strtolower(trim($jsonData->PhotoSearch)));
+    $searchKeyword = urlencode(strtolower(trim($jsonData->PhotoSearch)));
+    
     $ch = curl_init();
-    $URLRequest = "https://api.dictionaryapi.dev/api/v2/entries/en/".$keyword;
+    $URLRequest = "https://api.pexels.com/v1/search?query=" . $searchKeyword . "&page=0&per_page=80";
+    curl_setopt($ch, CURLOPT_HTTPHEADER, array('Authorization: '.$pexelsKey.''));
     curl_setopt($ch, CURLOPT_URL,$URLRequest);
     curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
     $response = curl_exec($ch);
     curl_close ($ch);
-    $DictionaryResponse = json_decode($response);
+    $PexelsResponse = json_decode($response);
+    // $keywordArray = array_unique(preg_split("/[-_ ]+|(?=[A-Z])/", $keyword));
 
-    if (!$DictionaryResponse->title) {
-        $generatedText = htmlspecialchars(trim(json_encode($DictionaryResponse[0])));
+    // $DictionaryResponses = array();
 
-        $query = $writeDB->prepare('SELECT JSON_CONTAINS_PATH(GeneratedText, "all", "$.'.$keyword.'") FROM tblusers WHERE id = :userid');
-        $query->bindParam(':userid', $loggedin_userid, PDO::PARAM_INT);
-        $query->execute();
+    // foreach ($keywordArray as $uniqueKeyword) {
+    //     if ($uniqueKeyword != "" && !in_array(strtolower($uniqueKeyword), $artsPreps)){
+    //         $uniqueLowerKeyword = strtolower($uniqueKeyword);
+    //         $query = $writeDB->prepare('SELECT JSON_CONTAINS_PATH(GeneratedText, "all", "$.'.$uniqueLowerKeyword.'") FROM tblusers WHERE id = :userid');
+    //         $query->bindParam(':userid', $loggedin_userid, PDO::PARAM_INT);
+    //         $query->execute();
+        
+    //         $rowCount = $query->fetch(PDO::FETCH_NUM)[0]; 
+    
+    //         if($rowCount === 0 || $rowCount === null) {
+    //             $ch = curl_init();
+    //             $URLRequest = "https://api.dictionaryapi.dev/api/v2/entries/en/".$uniqueLowerKeyword;
+    //             curl_setopt($ch, CURLOPT_URL,$URLRequest);
+    //             curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    //             $response = curl_exec($ch);
+    //             curl_close ($ch);
+    //             $DictionaryResponse = json_decode($response);
 
-        $rowCount = $query->fetch(PDO::FETCH_NUM)[0];
-
-        if($rowCount === 0) {
-            $query = $writeDB->prepare('UPDATE tblusers SET GeneratedText = JSON_SET(COALESCE(GeneratedText, "{}"), "$.'.$keyword.'", "'.$generatedText.'") WHERE id = :userid');
-            $query->bindParam(':userid', $loggedin_userid, PDO::PARAM_INT);
-            $query->execute();
-
-            $rowCount = $query->rowCount();
-
-            if($rowCount === 0) {
-                $response = new Response();
-                $response->setHttpStatusCode(400);
-                $response->setSuccess(false);
-                $response->addMessage('Generated text not updated');
-                $response->send();
-                exit;
-            }
-        }
-    }
+    //             if ($DictionaryResponse->title != 'No Definitions Found') {                
+    //                 $generatedText = htmlspecialchars(trim(json_encode($DictionaryResponse[0])));
+    //                 array_push($DictionaryResponses, $DictionaryResponse[0]);   
+            
+    //                 $query = $writeDB->prepare('UPDATE tblusers SET GeneratedText = JSON_SET(COALESCE(GeneratedText, "{}"), "$.'.$uniqueLowerKeyword.'", "'.$generatedText.'") WHERE id = :userid');
+    //                 $query->bindParam(':userid', $loggedin_userid, PDO::PARAM_INT);
+    //                 $query->execute();
+            
+    //                 $rowCount = $query->rowCount();
+            
+    //                 if($rowCount === 0) {
+    //                     $response = new Response();
+    //                     $response->setHttpStatusCode(400);
+    //                     $response->setSuccess(false);
+    //                     $response->addMessage('Generated text not updated');
+    //                     $response->send();
+    //                     exit;
+    //                 }
+    //             }
+    //         }
+    //     }
+    // }
 
     $returnData = array();
     $returnData['keyword'] = $keyword;
-    $returnData['dictionary_api'] = !$DictionaryResponse->title ? $DictionaryResponse[0] : "No entries found";
+    $returnData['search_keyword'] = $searchKeyword;
+    $returnData['pexelsKey'] = $pexelsKey;
+    $returnData['URL_Request'] = $URLRequest;
+    $returnData['Pexels_Response'] = $PexelsResponse;
+    // $returnData['generated_text'] = $DictionaryResponses;
+    // $returnData['generated_text_amount'] = count($DictionaryResponses);
 
     $response = new Response();
     $response->setHttpStatusCode(201);
     $response->setSuccess(true);
-    $response->addMessage('Generated text');
+    $response->addMessage('Found photos');
     $response->setData($returnData);
     $response->send();
     exit;

@@ -3,6 +3,7 @@
 $artsPreps = [
     'a',
     'an',
+    'and',
     'the',
     'aboard',
     'about',
@@ -41,6 +42,7 @@ $artsPreps = [
     'in',
     'inside',
     'into',
+    'is',
     'like',
     'minus',
     'near',

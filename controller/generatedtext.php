@@ -86,23 +86,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $response = curl_exec($ch);
                 curl_close ($ch);
                 $DictionaryResponse = json_decode($response);
-        
-                $generatedText = htmlspecialchars(trim(json_encode($DictionaryResponse[0])));
-                array_push($DictionaryResponses, $DictionaryResponse[0]);   
-        
-                $query = $writeDB->prepare('UPDATE tblusers SET GeneratedText = JSON_SET(COALESCE(GeneratedText, "{}"), "$.'.$uniqueLowerKeyword.'", "'.$generatedText.'") WHERE id = :userid');
-                $query->bindParam(':userid', $loggedin_userid, PDO::PARAM_INT);
-                $query->execute();
-        
-                $rowCount = $query->rowCount();
-        
-                if($rowCount === 0) {
-                    $response = new Response();
-                    $response->setHttpStatusCode(400);
-                    $response->setSuccess(false);
-                    $response->addMessage('Generated text not updated');
-                    $response->send();
-                    exit;
+
+                if ($DictionaryResponse->title != 'No Definitions Found') {                
+                    $generatedText = htmlspecialchars(trim(json_encode($DictionaryResponse[0])));
+                    array_push($DictionaryResponses, $DictionaryResponse[0]);   
+            
+                    $query = $writeDB->prepare('UPDATE tblusers SET GeneratedText = JSON_SET(COALESCE(GeneratedText, "{}"), "$.'.$uniqueLowerKeyword.'", "'.$generatedText.'") WHERE id = :userid');
+                    $query->bindParam(':userid', $loggedin_userid, PDO::PARAM_INT);
+                    $query->execute();
+            
+                    $rowCount = $query->rowCount();
+            
+                    if($rowCount === 0) {
+                        $response = new Response();
+                        $response->setHttpStatusCode(400);
+                        $response->setSuccess(false);
+                        $response->addMessage('Generated text not updated');
+                        $response->send();
+                        exit;
+                    }
                 }
             }
         }
@@ -111,12 +113,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $returnData = array();
     $returnData['keyword'] = $keyword;
     $returnData['generated_text'] = $DictionaryResponses;
-
+    $returnData['generated_text_amount'] = count($DictionaryResponses);
 
     $response = new Response();
     $response->setHttpStatusCode(201);
     $response->setSuccess(true);
-    $response->addMessage('Generated text');
+    count($DictionaryResponses) > 0 ? $response->addMessage('Generated text') : $response->addMessage('No new generated text');
     $response->setData($returnData);
     $response->send();
     exit;
