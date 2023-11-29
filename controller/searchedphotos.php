@@ -149,7 +149,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $returnData['URL_Request'] = $URLRequest;
     $returnData['Pexels_Response'] = $PexelsResponse;
     $returnData['row_count'] = $rowCount;
-    // $returnData['generated_text_amount'] = count($DictionaryResponses);
 
     $response = new Response();
     $response->setHttpStatusCode(201);

@@ -272,7 +272,7 @@ class User {
         $decodedGeneratedtext = json_decode($generatedtext);
         $decodedGeneratedtext_noSpecialChars = [];
         foreach ($decodedGeneratedtext as $key => $value) {
-            $decodedGeneratedtext_noSpecialChars[$key] = json_decode(htmlspecialchars_decode($value));
+            $decodedGeneratedtext_noSpecialChars[$key] = json_decode(htmlspecialchars_decode(str_replace('u0026', '&', $value)));
         }
         $this->_generatedtext = $decodedGeneratedtext_noSpecialChars;
     }
@@ -281,7 +281,7 @@ class User {
         $decodedSearchedphotos = json_decode($searchedphotos);
         $decodedSearchedphotos_noSpecialChars = [];
         foreach ($decodedSearchedphotos as $key => $value) {
-            $decodedSearchedphotos_noSpecialChars[$key] = json_decode(htmlspecialchars_decode($value));
+            $decodedSearchedphotos_noSpecialChars[$key] = json_decode(htmlspecialchars_decode(str_replace('u0026', '&', $value)));
         }
         $this->_searchedphotos = $decodedSearchedphotos_noSpecialChars;
     }

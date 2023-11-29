@@ -83,9 +83,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $URLRequest = "https://api.dictionaryapi.dev/api/v2/entries/en/".$uniqueLowerKeyword;
                 curl_setopt($ch, CURLOPT_URL,$URLRequest);
                 curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-                $response = curl_exec($ch);
+                $CURLresponse = curl_exec($ch);
                 curl_close ($ch);
-                $DictionaryResponse = json_decode($response);
+                $CURLResponseNoQuotes = str_replace(['\"', '\''], '', $CURLresponse);
+                $DictionaryResponse = json_decode($CURLResponseNoQuotes);
 
                 if ($DictionaryResponse->title != 'No Definitions Found') {                
                     $generatedText = htmlspecialchars(trim(json_encode($DictionaryResponse[0])));
