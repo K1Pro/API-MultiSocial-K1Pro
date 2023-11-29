@@ -36,6 +36,107 @@ require_once('../../../../login/v001/public/controller/components/authentication
 
 if($_SERVER['REQUEST_METHOD'] === 'POST') {
     // Creating users will be done in the centralized login API
+} elseif($_SERVER['REQUEST_METHOD'] === 'PATCH') {
+    if($_SERVER['CONTENT_TYPE'] !== 'application/json') {
+        $response = new Response();
+        $response->setHttpStatusCode(400);
+        $response->setSuccess(false);
+        $response->addMessage('Content Type header not set to JSON');
+        $response->send();
+        exit;
+    }
+
+    $rawPatchData = file_get_contents('php://input');
+
+    if(!$jsonData = json_decode($rawPatchData)) {
+        $response = new Response();
+        $response->setHttpStatusCode(400);
+        $response->setSuccess(false);
+        $response->addMessage('Request body is not valid JSON');
+        $response->send();
+        exit;
+    }
+
+    if(count(get_object_vars($jsonData)) !== 1) {
+        $response = new Response();
+        $response->setHttpStatusCode(400);
+        $response->setSuccess(false);
+        $response->addMessage('Only one parameter modification allowed');
+        $response->send();
+        exit;
+    }
+
+    $jsonDataKey = trim(key((array)$jsonData));
+    $jsonDataKeyClean = htmlspecialchars(trim(key((array)$jsonData)));
+    $jsonDataValue = trim(current((array)$jsonData));
+    $jsonDataValueClean = htmlspecialchars(trim(current((array)$jsonData)));
+
+    if(strlen($jsonDataValueClean) > 1000){
+        $response = new Response();
+        $response->setHttpStatusCode(400);
+        $response->setSuccess(false);
+        $response->addMessage('Parameter too long');
+        $response->send();
+        exit;
+    }
+
+    $query = $readDB->prepare("show columns from tblusers like '$jsonDataKeyClean'");
+    $query->execute();
+
+    $rowCount = $query->rowCount();
+
+    if($rowCount === 0) {
+        $response = new Response();
+        $response->setHttpStatusCode(400);
+        $response->setSuccess(false);
+        $response->addMessage('Invalid user param');
+        $response->send();
+        exit;
+    }
+
+    $field_type = $query->fetch(PDO::FETCH_ASSOC)['Type'];
+
+    if($field_type === 'bigint(20)' || $field_type === 'longtext' || $field_type === 'varchar(255)' || str_contains($field_type, 'enum')) {
+        $response = new Response();
+        $response->setHttpStatusCode(400);
+        $response->setSuccess(false);
+        $response->addMessage('This param can not be modified');
+        $response->send();
+        exit;
+    }
+
+    $query = $readDB->prepare('UPDATE tblusers SET '.$jsonDataKeyClean.' = :jsonDataValue WHERE id = :userid');
+    $query->bindParam(':jsonDataValue', $jsonDataValue, PDO::PARAM_STR);
+    $query->bindParam(':userid', $loggedin_userid, PDO::PARAM_INT);
+    $query->execute();
+
+    $rowCount = $query->rowCount();
+
+    if($rowCount === 0) {
+        $response = new Response();
+        $response->setHttpStatusCode(400);
+        $response->setSuccess(false);
+        $response->addMessage('Param update error');
+        $response->send();
+        exit;
+    }
+
+    $returnData = array();
+    $returnData['rows_returned'] = $rowCount;
+    $returnData['jsonDataKey'] = $jsonDataKeyClean;
+    $returnData['jsonDataValue'] = $jsonDataValueClean;
+    $returnData['jsonData'] = $jsonData;
+    $returnData['field_type'] = $field_type;
+
+    $response = new Response();
+    $response->setHttpStatusCode(200);
+    $response->setSuccess(true);
+    // $response->toCache(true);
+    $response->addMessage("Updated ".preg_replace('/(?<!\ )[A-Z]/', ' $0', $jsonDataKeyClean)."");
+    $response->setData($returnData);
+    $response->send();
+    exit;
+
 } elseif ($_SERVER['REQUEST_METHOD'] === 'GET') {
     if(empty($_GET)){
         try{

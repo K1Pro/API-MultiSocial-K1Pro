@@ -80,8 +80,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         exit;
     }
 
-    
-
     $keyword = str_replace(' ', '_', htmlspecialchars(strtolower(trim($jsonData->PhotoSearch))));
     $searchKeyword = urlencode(strtolower(trim($jsonData->PhotoSearch)));
     
@@ -90,9 +88,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     curl_setopt($ch, CURLOPT_HTTPHEADER, array('Authorization: '.$pexelsKey.''));
     curl_setopt($ch, CURLOPT_URL,$URLRequest);
     curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-    $response = curl_exec($ch);
+    $CURLresponse = curl_exec($ch);
     curl_close ($ch);
-    $PexelsResponse = json_decode($response);
+
+    $CURLResponseNoQuotes = str_replace(['\"', '\''], '', $CURLresponse);
+    $PexelsResponse = json_decode($CURLResponseNoQuotes);
+
+    $query = $readDB->prepare('UPDATE tblusers SET MostRecentSearch = "'.$keyword.'" WHERE id = :userid');
+    $query->bindParam(':userid', $loggedin_userid, PDO::PARAM_INT);
+    $query->execute();
     // $keywordArray = array_unique(preg_split("/[-_ ]+|(?=[A-Z])/", $keyword));
 
     // $DictionaryResponses = array();
@@ -116,7 +120,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 // $DictionaryResponse = json_decode($response);
 
                 if ($PexelsResponse->total_results > 0) {                
-                    $searchedPhotos = htmlspecialchars(trim($response));
+                    $searchedPhotos = htmlspecialchars(trim($CURLResponseNoQuotes));
                     // array_push($DictionaryResponses, $DictionaryResponse[0]);   
             
                     $query = $writeDB->prepare('UPDATE tblusers SET SearchedPhotos = JSON_SET(COALESCE(SearchedPhotos, "{}"), "$.'.$keyword.'", "'.$searchedPhotos.'") WHERE id = :userid');
