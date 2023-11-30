@@ -15,9 +15,7 @@ class User {
     private $_postbody;
     private $_website;
     private $_websitedesc;
-    private $_tag1;
-    private $_tag2;
-    private $_tag3;
+    private $_tags;
     private $_mostrecentsearch;
     private $_mostrecentphoto;
     private $_pexels;
@@ -28,7 +26,7 @@ class User {
     private $_searchedphotosamount;
 
 
-    public function __construct($id, $firstname, $username, $email, $appuseractive, $appaccounttype, $organization, $posttitle, $postbody, $website, $websitedesc, $tag1, $tag2, $tag3, $mostrecentsearch, $mostrecentphoto, $pexels, $smparams, $smposts, $generatedtext, $searchedphotos, $searchedphotosamount) {
+    public function __construct($id, $firstname, $username, $email, $appuseractive, $appaccounttype, $organization, $posttitle, $postbody, $website, $websitedesc, $tags, $mostrecentsearch, $mostrecentphoto, $pexels, $smparams, $smposts, $generatedtext, $searchedphotos, $searchedphotosamount) {
         $this->setID($id);
         $this->setFirstname($firstname);
         $this->setUsername($username);
@@ -40,9 +38,7 @@ class User {
         $this->setPostbody($postbody);
         $this->setWebsite($website);
         $this->setWebsitedesc($websitedesc);
-        $this->setTag1($tag1);
-        $this->setTag2($tag2);
-        $this->setTag3($tag3);
+        $this->setTags($tags);
         $this->setMostrecentsearch($mostrecentsearch);
         $this->setMostrecentphoto($mostrecentphoto);
         $this->setPexels($pexels);
@@ -97,16 +93,8 @@ class User {
         return $this->_websitedesc;
     }
 
-    public function getTag1() {
-        return $this->_tag1;
-    }
-
-    public function getTag2() {
-        return $this->_tag2;
-    }
-
-    public function getTag3() {
-        return $this->_tag3;
+    public function getTags() {
+        return $this->_tags;
     }
 
     public function getMostrecentsearch() {
@@ -218,25 +206,11 @@ class User {
         $this->_websitedesc = $websitedesc;
     }
 
-    public function setTag1($tag1) {
-        if (strlen($tag1) < 0 || strlen($tag1) > 510) {
-            throw new UserException('User tag1 error');
+    public function setTags($tags) {
+        if (strlen($tags) < 0 || strlen($tags) > 510) {
+            throw new UserException('User tags error');
         }
-        $this->_tag1 = $tag1;
-    }
-
-    public function setTag2($tag2) {
-        if (strlen($tag2) < 0 || strlen($tag2) > 510) {
-            throw new UserException('User tag2 error');
-        }
-        $this->_tag2 = $tag2;
-    }
-
-    public function setTag3($tag3) {
-        if (strlen($tag3) < 0 || strlen($tag3) > 510) {
-            throw new UserException('User tag3 error');
-        }
-        $this->_tag3 = $tag3;
+        $this->_tags = $tags;
     }
 
     public function setMostrecentsearch($mostrecentsearch) {
@@ -272,6 +246,7 @@ class User {
         $decodedGeneratedtext = json_decode($generatedtext);
         $decodedGeneratedtext_noSpecialChars = [];
         foreach ($decodedGeneratedtext as $key => $value) {
+            // str_replace of u0026 is needed because it appears that & (ampersand) is mutated and not properly returned
             $decodedGeneratedtext_noSpecialChars[$key] = json_decode(htmlspecialchars_decode(str_replace('u0026', '&', $value)));
         }
         $this->_generatedtext = $decodedGeneratedtext_noSpecialChars;
@@ -281,6 +256,7 @@ class User {
         $decodedSearchedphotos = json_decode($searchedphotos);
         $decodedSearchedphotos_noSpecialChars = [];
         foreach ($decodedSearchedphotos as $key => $value) {
+            // str_replace of u0026 is needed because it appears that & (ampersand) is mutated and not properly returned
             $decodedSearchedphotos_noSpecialChars[$key] = json_decode(htmlspecialchars_decode(str_replace('u0026', '&', $value)));
         }
         $this->_searchedphotos = $decodedSearchedphotos_noSpecialChars;
@@ -303,9 +279,7 @@ class User {
         $user['PostBody'] = $this->getPostbody();
         $user['Website'] = $this->getWebsite();
         $user['WebsiteDesc'] = $this->getWebsitedesc();
-        $user['Tag1'] = $this->getTag1();
-        $user['Tag2'] = $this->getTag2();
-        $user['Tag3'] = $this->getTag3();
+        $user['Tags'] = $this->getTags();
         $user['MostRecentSearch'] = $this->getMostrecentsearch();
         $user['MostRecentPhoto'] = $this->getMostrecentphoto();
         $user['Pexels'] = $this->getPexels();

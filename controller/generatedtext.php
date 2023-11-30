@@ -55,11 +55,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         exit;
     }
 
-    if(strlen($jsonData->Keyword) < 1){
+    if(strlen($jsonData->Keyword) <= 1){
         $response = new Response();
         $response->setHttpStatusCode(400);
         $response->setSuccess(false);
-        (strlen($jsonData->Keyword) < 1 ? $response->addMessage('Keyword cannot be blank') : false);
+        (strlen($jsonData->Keyword) == 1 ? $response->addMessage('Title must be more than one character') : false);
+        (strlen($jsonData->Keyword) < 1 ? $response->addMessage('Title cannot be blank') : false);
         $response->send();
         exit;
     }
@@ -70,8 +71,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $DictionaryResponses = array();
 
     foreach ($keywordArray as $uniqueKeyword) {
-        if ($uniqueKeyword != "" && !in_array(strtolower($uniqueKeyword), $artsPreps)){
-            $uniqueLowerKeyword = strtolower($uniqueKeyword);
+        if (strlen(trim($uniqueKeyword)) > 1 && !in_array(strtolower($uniqueKeyword), $artsPreps)){
+            $uniqueLowerKeyword = preg_replace('/[^A-Za-z\-]/', '', strtolower($uniqueKeyword)); // removes all special characters
             $query = $writeDB->prepare('SELECT JSON_CONTAINS_PATH(GeneratedText, "all", "$.'.$uniqueLowerKeyword.'") FROM tblusers WHERE id = :userid');
             $query->bindParam(':userid', $loggedin_userid, PDO::PARAM_INT);
             $query->execute();
@@ -85,6 +86,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
                 $CURLresponse = curl_exec($ch);
                 curl_close ($ch);
+
+                // any " (double quotes) or (') single quotes in the response can cause the data to be improperly saved to the database
                 $CURLResponseNoQuotes = str_replace(['\"', '\''], '', $CURLresponse);
                 $DictionaryResponse = json_decode($CURLResponseNoQuotes);
 

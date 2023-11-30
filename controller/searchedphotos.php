@@ -91,6 +91,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $CURLresponse = curl_exec($ch);
     curl_close ($ch);
 
+    // any " (double quotes) or (') single quotes in the response can cause the data to be improperly saved to the database
     $CURLResponseNoQuotes = str_replace(['\"', '\''], '', $CURLresponse);
     $PexelsResponse = json_decode($CURLResponseNoQuotes);
 
