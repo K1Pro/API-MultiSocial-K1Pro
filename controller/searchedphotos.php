@@ -82,9 +82,35 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     $keyword = str_replace(' ', '_', htmlspecialchars(strtolower(trim($jsonData->PhotoSearch))));
     $searchKeyword = urlencode(strtolower(trim($jsonData->PhotoSearch)));
+
+    $query = $readDB->prepare('SELECT JSON_UNQUOTE(JSON_EXTRACT(SearchedPhotos, "$.'.$keyword.'")) FROM tblusers WHERE id = :userid');
+    $query->bindParam(':userid', $loggedin_userid, PDO::PARAM_INT);
+    $query->execute();
+
+    $rowCount = $query->fetch(PDO::FETCH_NUM)[0];
+
+    $randomPage = 1;
+
+    if ($rowCount){
+        $prevImgSrchResults = json_decode(htmlspecialchars_decode(str_replace('u0026', '&', $rowCount)));
+        $prevImgSrchPage = $prevImgSrchResults->page;
+        $prevImgSrchTotalResults = $prevImgSrchResults->total_results;
+        $prevImgSrchTotalPages = floor($prevImgSrchTotalResults / 80) != 0 ? floor($prevImgSrchTotalResults / 80) : 1;
+        if ($prevImgSrchTotalPages > 1){
+            do {   
+                $randomPage = $page = rand(1,$prevImgSrchTotalPages);
+            } while(in_array($randomPage, array($prevImgSrchPage, null)));  
+        } 
+    }
+
+    // const prevSrchTtlRsltsMax = prevSrchTtlRslts && prevSrchTtlRslts != 'undefined' ? Math.floor(prevSrchTtlRslts / 80) : 1;
+    // const randomPage = Math.floor(Math.random() * (prevSrchTtlRsltsMax - 1 + 1) + 1);
     
+
+    
+    // // vvvvvvvvvvvv this was working vvvvvvvvvvvvvvvvvvvv
     $ch = curl_init();
-    $URLRequest = "https://api.pexels.com/v1/search?query=" . $searchKeyword . "&page=0&per_page=80";
+    $URLRequest = "https://api.pexels.com/v1/search?query=" . $searchKeyword . "&page=" . $randomPage . "&per_page=80";
     curl_setopt($ch, CURLOPT_HTTPHEADER, array('Authorization: '.$pexelsKey.''));
     curl_setopt($ch, CURLOPT_URL,$URLRequest);
     curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
@@ -92,8 +118,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     curl_close ($ch);
 
     // any " (double quotes) or (') single quotes in the response can cause the data to be improperly saved to the database
-    $CURLResponseNoQuotes = str_replace(['\"', '\''], '', $CURLresponse);
-    $PexelsResponse = json_decode($CURLResponseNoQuotes);
+    $CURLResponseNoQuotes = str_replace(['\"', '\'', '\\'], '', $CURLresponse);
+    $CURLResponseNoEmojisQuotes = preg_replace('/[[:^print:]]/', '',$CURLResponseNoQuotes);
+    $PexelsResponse = json_decode($CURLResponseNoEmojisQuotes);
 
     $query = $readDB->prepare('UPDATE tblusers SET MostRecentSearch = "'.$keyword.'" WHERE id = :userid');
     $query->bindParam(':userid', $loggedin_userid, PDO::PARAM_INT);
@@ -102,6 +129,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     // $DictionaryResponses = array();
 
+   
     // foreach ($keywordArray as $uniqueKeyword) {
     //     if ($uniqueKeyword != "" && !in_array(strtolower($uniqueKeyword), $artsPreps)){
     //         $uniqueLowerKeyword = strtolower($uniqueKeyword);
@@ -111,7 +139,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         
             $rowCount = $query->fetch(PDO::FETCH_NUM)[0];
     
-            if($rowCount === 0 || $rowCount === null) {
+            // if($rowCount === 0 || $rowCount === null) {
                 // $ch = curl_init();
                 // $URLRequest = "https://api.dictionaryapi.dev/api/v2/entries/en/".$uniqueLowerKeyword;
                 // curl_setopt($ch, CURLOPT_URL,$URLRequest);
@@ -121,7 +149,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 // $DictionaryResponse = json_decode($response);
 
                 if ($PexelsResponse->total_results > 0) {                
-                    $searchedPhotos = htmlspecialchars(trim($CURLResponseNoQuotes));
+                    $searchedPhotos = htmlspecialchars(trim($CURLResponseNoEmojisQuotes));
                     // array_push($DictionaryResponses, $DictionaryResponse[0]);   
             
                     $query = $writeDB->prepare('UPDATE tblusers SET SearchedPhotos = JSON_SET(COALESCE(SearchedPhotos, "{}"), "$.'.$keyword.'", "'.$searchedPhotos.'") WHERE id = :userid');
@@ -139,17 +167,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         exit;
                     }
                 }
-            }
+            // }
     //     }
     // }
+    // // ^^^^^^^^^^^^^^^^^^^^ this was working ^^^^^^^^^^^^^^^^^^^^^
 
     $returnData = array();
     $returnData['keyword'] = $keyword;
     $returnData['search_keyword'] = $searchKeyword;
     $returnData['pexelsKey'] = $pexelsKey;
     $returnData['URL_Request'] = $URLRequest;
-    $returnData['Pexels_Response'] = $PexelsResponse;
-    $returnData['row_count'] = $rowCount;
+    $returnData['Pexels_Response'] = json_decode($CURLresponse);
+    // $returnData['row_count'] = $rowCount;
+    $returnData['prev_image_search_total_results'] = $prevImgSrchTotalResults;
+    $returnData['prev_image_search_total_pages'] = $prevImgSrchTotalPages;
+    $returnData['previous_page'] = $prevImgSrchPage;
+    $returnData['random_Page'] = $randomPage;
+
 
     $response = new Response();
     $response->setHttpStatusCode(201);

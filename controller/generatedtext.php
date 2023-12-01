@@ -88,8 +88,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 curl_close ($ch);
 
                 // any " (double quotes) or (') single quotes in the response can cause the data to be improperly saved to the database
-                $CURLResponseNoQuotes = str_replace(['\"', '\''], '', $CURLresponse);
-                $DictionaryResponse = json_decode($CURLResponseNoQuotes);
+                $CURLResponseNoQuotes = str_replace(['\"', '\'', '\\'], '', $CURLresponse);
+                $CURLResponseNoEmojisQuotes = preg_replace('/[[:^print:]]/', '',$CURLResponseNoQuotes);
+                $DictionaryResponse = json_decode($CURLResponseNoEmojisQuotes);
 
                 if ($DictionaryResponse->title != 'No Definitions Found') {                
                     $generatedText = htmlspecialchars(trim(json_encode($DictionaryResponse[0])));
