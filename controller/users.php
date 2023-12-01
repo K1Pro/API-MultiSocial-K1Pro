@@ -141,7 +141,7 @@ if($_SERVER['REQUEST_METHOD'] === 'POST') {
 } elseif ($_SERVER['REQUEST_METHOD'] === 'GET') {
     if(empty($_GET)){
         try{
-            $query = $readDB->prepare('SELECT id, FirstName, Username, Email, AppUserActive, AppAccountType, Organization, PostTitle, PostBody, Website, WebsiteDesc, Tags, MostRecentSearch, MostRecentPhoto, Pexels, SMParams, SMPosts, GeneratedText, SearchedPhotos, SearchedPhotosAmount 
+            $query = $readDB->prepare('SELECT id, FirstName, Username, Email, AppUserActive, AppAccountType, Organization, PostTitle, PostBody, Website, WebsiteDesc, Tags, MostRecentSearch, MostRecentPhoto, Pexels, SMParams, SMPosts, GeneratedText, SearchedPhotos 
                                         from tblusers');
             $query->execute();
 
@@ -150,7 +150,7 @@ if($_SERVER['REQUEST_METHOD'] === 'POST') {
             $userArray = array();
 
             while($row = $query->fetch(PDO::FETCH_ASSOC)) {
-                $user = new User($row['id'], $row['FirstName'], $row['Username'], $row['Email'], $row['AppUserActive'], $row['AppAccountType'], $row['Organization'], $row['PostTitle'], $row['PostBody'], $row['Website'], $row['WebsiteDesc'], $row['Tags'], $row['MostRecentSearch'], $row['MostRecentPhoto'], $row['Pexels'], $row['SMParams'], $row['SMPosts'], $row['GeneratedText'], $row['SearchedPhotos'], $row['SearchedPhotosAmount']);
+                $user = new User($row['id'], $row['FirstName'], $row['Username'], $row['Email'], $row['AppUserActive'], $row['AppAccountType'], $row['Organization'], $row['PostTitle'], $row['PostBody'], $row['Website'], $row['WebsiteDesc'], $row['Tags'], $row['MostRecentSearch'], $row['MostRecentPhoto'], $row['Pexels'], $row['SMParams'], $row['SMPosts'], $row['GeneratedText'], $row['SearchedPhotos']);
                 $userArray[] = $user->returnUserAsArray();
             }
 
@@ -215,7 +215,7 @@ if($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $validloginArray[] = $validlogin->returnValidLoginAsArray();
                 }
 
-                $query = $readDB->prepare('SELECT id, FirstName, Username, Email, AppUserActive, AppAccountType, Organization, PostTitle, PostBody, Website, WebsiteDesc, Tags, MostRecentSearch, MostRecentPhoto, Pexels, SMParams, SMPosts, GeneratedText, SearchedPhotos, SearchedPhotosAmount 
+                $query = $readDB->prepare('SELECT id, FirstName, Username, Email, AppUserActive, AppAccountType, Organization, PostTitle, PostBody, Website, WebsiteDesc, Tags, MostRecentSearch, MostRecentPhoto, Pexels, SMParams, SMPosts, GeneratedText, SearchedPhotos 
                                             FROM tblusers 
                                             WHERE id = :userid AND FirstName = :firstname AND Username = :username AND Email = :email AND Organization = :organization');
                 $query->bindParam(':userid', $validloginArray[0]['id'], PDO::PARAM_INT);
@@ -240,7 +240,7 @@ if($_SERVER['REQUEST_METHOD'] === 'POST') {
                 }
 
                 while($row = $query->fetch(PDO::FETCH_ASSOC)) {
-                    $user = new User($row['id'], $row['FirstName'], $row['Username'], $row['Email'], $row['AppUserActive'], $row['AppAccountType'], $row['Organization'], $row['PostTitle'], $row['PostBody'], $row['Website'], $row['WebsiteDesc'], $row['Tags'], $row['MostRecentSearch'], $row['MostRecentPhoto'], $row['Pexels'], $row['SMParams'], $row['SMPosts'], $row['GeneratedText'], $row['SearchedPhotos'], $row['SearchedPhotosAmount']);
+                    $user = new User($row['id'], $row['FirstName'], $row['Username'], $row['Email'], $row['AppUserActive'], $row['AppAccountType'], $row['Organization'], $row['PostTitle'], $row['PostBody'], $row['Website'], $row['WebsiteDesc'], $row['Tags'], $row['MostRecentSearch'], $row['MostRecentPhoto'], $row['Pexels'], $row['SMParams'], $row['SMPosts'], $row['GeneratedText'], $row['SearchedPhotos']);
                     $userArray[] = $user->returnUserAsArray();
                 }
 

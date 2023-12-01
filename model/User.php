@@ -23,10 +23,8 @@ class User {
     private $_smposts;
     private $_generatedtext;
     private $_searchedphotos;
-    private $_searchedphotosamount;
 
-
-    public function __construct($id, $firstname, $username, $email, $appuseractive, $appaccounttype, $organization, $posttitle, $postbody, $website, $websitedesc, $tags, $mostrecentsearch, $mostrecentphoto, $pexels, $smparams, $smposts, $generatedtext, $searchedphotos, $searchedphotosamount) {
+    public function __construct($id, $firstname, $username, $email, $appuseractive, $appaccounttype, $organization, $posttitle, $postbody, $website, $websitedesc, $tags, $mostrecentsearch, $mostrecentphoto, $pexels, $smparams, $smposts, $generatedtext, $searchedphotos) {
         $this->setID($id);
         $this->setFirstname($firstname);
         $this->setUsername($username);
@@ -46,7 +44,6 @@ class User {
         $this->setSMPosts($smposts);
         $this->setGeneratedtext($generatedtext);
         $this->setSearchedphotos($searchedphotos);
-        $this->setSearchedphotosamount($searchedphotosamount);
     }
 
     public function getID() {
@@ -123,10 +120,6 @@ class User {
 
     public function getSearchedphotos() {
         return $this->_searchedphotos;
-    }
-
-    public function getSearchedphotosamount() {
-        return $this->_searchedphotosamount;
     }
 
     public function setID($id) {
@@ -262,10 +255,6 @@ class User {
         $this->_searchedphotos = $decodedSearchedphotos_noSpecialChars;
     }
 
-    public function setSearchedphotosamount($searchedphotosamount) {
-        $this->_searchedphotosamount = json_decode($searchedphotosamount);
-    }
-
     public function returnUserAsArray() {
         $user = array();
         $user['id'] = $this->getID();
@@ -287,7 +276,6 @@ class User {
         $user['SMPosts'] = $this->getSMPosts();
         $user['GeneratedText'] = $this->getGeneratedtext();
         $user['SearchedPhotos'] = $this->getSearchedphotos();
-        $user['SearchedPhotosAmount'] = $this->getSearchedphotosamount();
 
         return $user;
     }
