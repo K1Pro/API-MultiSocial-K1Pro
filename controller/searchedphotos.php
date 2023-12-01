@@ -103,12 +103,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         } 
     }
 
-    // const prevSrchTtlRsltsMax = prevSrchTtlRslts && prevSrchTtlRslts != 'undefined' ? Math.floor(prevSrchTtlRslts / 80) : 1;
-    // const randomPage = Math.floor(Math.random() * (prevSrchTtlRsltsMax - 1 + 1) + 1);
-    
-
-    
-    // // vvvvvvvvvvvv this was working vvvvvvvvvvvvvvvvvvvv
     $ch = curl_init();
     $URLRequest = "https://api.pexels.com/v1/search?query=" . $searchKeyword . "&page=" . $randomPage . "&per_page=80";
     curl_setopt($ch, CURLOPT_HTTPHEADER, array('Authorization: '.$pexelsKey.''));
@@ -117,60 +111,40 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $CURLresponse = curl_exec($ch);
     curl_close ($ch);
 
-    // any " (double quotes) or (') single quotes in the response can cause the data to be improperly saved to the database
-    $CURLResponseNoQuotes = str_replace(['\"', '\'', '\\'], '', $CURLresponse);
-    $CURLResponseNoEmojisQuotes = preg_replace('/[[:^print:]]/', '',$CURLResponseNoQuotes);
+
+    $CURLResponseNoQuotes = str_replace(['\"', '\'', '\\'], '', $CURLresponse); // any " (double quotes) or (') single quotes in the response can cause the data to be improperly saved to the database
+    $CURLResponseNoEmojisQuotes = preg_replace('/[[:^print:]]/', '',$CURLResponseNoQuotes); // this cleans from emojis
     $PexelsResponse = json_decode($CURLResponseNoEmojisQuotes);
 
     $query = $readDB->prepare('UPDATE tblusers SET MostRecentSearch = "'.$keyword.'" WHERE id = :userid');
     $query->bindParam(':userid', $loggedin_userid, PDO::PARAM_INT);
     $query->execute();
-    // $keywordArray = array_unique(preg_split("/[-_ ]+|(?=[A-Z])/", $keyword));
 
-    // $DictionaryResponses = array();
+    $query = $readDB->prepare('SELECT JSON_CONTAINS_PATH(SearchedPhotos, "all", "$.'.$keyword.'") FROM tblusers WHERE id = :userid');
+    $query->bindParam(':userid', $loggedin_userid, PDO::PARAM_INT);
+    $query->execute();
 
-   
-    // foreach ($keywordArray as $uniqueKeyword) {
-    //     if ($uniqueKeyword != "" && !in_array(strtolower($uniqueKeyword), $artsPreps)){
-    //         $uniqueLowerKeyword = strtolower($uniqueKeyword);
-            $query = $readDB->prepare('SELECT JSON_CONTAINS_PATH(SearchedPhotos, "all", "$.'.$keyword.'") FROM tblusers WHERE id = :userid');
+    $rowCount = $query->fetch(PDO::FETCH_NUM)[0];
+
+        if ($PexelsResponse->total_results > 0) {                
+            $searchedPhotos = htmlspecialchars(trim($CURLResponseNoEmojisQuotes));
+    
+            $query = $writeDB->prepare('UPDATE tblusers SET SearchedPhotos = JSON_SET(COALESCE(SearchedPhotos, "{}"), "$.'.$keyword.'", "'.$searchedPhotos.'") WHERE id = :userid');
             $query->bindParam(':userid', $loggedin_userid, PDO::PARAM_INT);
             $query->execute();
-        
-            $rowCount = $query->fetch(PDO::FETCH_NUM)[0];
     
-            // if($rowCount === 0 || $rowCount === null) {
-                // $ch = curl_init();
-                // $URLRequest = "https://api.dictionaryapi.dev/api/v2/entries/en/".$uniqueLowerKeyword;
-                // curl_setopt($ch, CURLOPT_URL,$URLRequest);
-                // curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-                // $response = curl_exec($ch);
-                // curl_close ($ch);
-                // $DictionaryResponse = json_decode($response);
+            $rowCount = $query->rowCount();
+    
+            if($rowCount === 0) {
+                $response = new Response();
+                $response->setHttpStatusCode(400);
+                $response->setSuccess(false);
+                $response->addMessage('Generated text not updated');
+                $response->send();
+                exit;
+            }
+        }
 
-                if ($PexelsResponse->total_results > 0) {                
-                    $searchedPhotos = htmlspecialchars(trim($CURLResponseNoEmojisQuotes));
-                    // array_push($DictionaryResponses, $DictionaryResponse[0]);   
-            
-                    $query = $writeDB->prepare('UPDATE tblusers SET SearchedPhotos = JSON_SET(COALESCE(SearchedPhotos, "{}"), "$.'.$keyword.'", "'.$searchedPhotos.'") WHERE id = :userid');
-                    $query->bindParam(':userid', $loggedin_userid, PDO::PARAM_INT);
-                    $query->execute();
-            
-                    $rowCount = $query->rowCount();
-            
-                    if($rowCount === 0) {
-                        $response = new Response();
-                        $response->setHttpStatusCode(400);
-                        $response->setSuccess(false);
-                        $response->addMessage('Generated text not updated');
-                        $response->send();
-                        exit;
-                    }
-                }
-            // }
-    //     }
-    // }
-    // // ^^^^^^^^^^^^^^^^^^^^ this was working ^^^^^^^^^^^^^^^^^^^^^
 
     $returnData = array();
     $returnData['keyword'] = $keyword;
