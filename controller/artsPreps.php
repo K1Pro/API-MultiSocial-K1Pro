@@ -1,6 +1,6 @@
 <?php
 
-$artsPreps = [
+$artsPreps = array(
     'a',
     'an',
     'and',
@@ -133,8 +133,7 @@ $artsPreps = [
     'want',
     'will',
     'work',
-    'would '
-    ]
+    'would'
+);
 
 ?>
-

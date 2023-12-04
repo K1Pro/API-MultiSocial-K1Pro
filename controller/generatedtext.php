@@ -4,7 +4,7 @@ require_once('../../../../login/v001/public/controller/components/logindb.php');
 require_once('db.php');
 require_once('../../../../login/v001/public/model/ValidLogin.php');
 require_once('../model/Response.php');
-require_once('textalgorithm.php');
+require_once('artsPreps.php');
 
 try{
     $loginDB = DBlogin::connectLoginDB();
